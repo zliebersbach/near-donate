@@ -8,18 +8,20 @@ beforeEach(() => {
 })
 
 describe("Contract", () => {
-  // VIEW method tests
-
-  it("greets world", () => {
-    expect(contract.greetWorld()).toStrictEqual("hello, world!")
-  })
-
   // CHANGE method tests
 
-  it("greets me", () => {
+  it("creates account", () => {
     const testerAccountId = 'tester';
     VMContext.setSigner_account_id(testerAccountId);
 
-    expect(contract.greetMe()).toStrictEqual(`hello, ${testerAccountId}!`)
+    expect(contract.create_account()).toStrictEqual(`donate.${testerAccountId}`)
+  })
+
+  // TODO: This needs to be a simulation test!
+  it("creates account and call method", () => {
+    const testerAccountId = 'tester';
+    VMContext.setSigner_account_id(testerAccountId);
+
+    expect(contract.create_account()).toStrictEqual(`donate.${testerAccountId}`)
   })
 })

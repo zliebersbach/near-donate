@@ -35,3 +35,5 @@ Here are some of the resources used when creating this project:
 
 - [YouTube: NEAR from Scratch: AssemblyScript Project Setup](https://www.youtube.com/watch?v=QP7aveSqRPo)
 - [GitHub: starter--near-sdk-as](https://github.com/Learn-NEAR/starter--near-sdk-as)
+- [GitHub: NCD.L1.sample--meme-museum](https://github.com/Learn-NEAR/NCD.L1.sample--meme-museum)
+- [GitHub: simulation-testing](https://github.com/near-examples/simulation-testing)
