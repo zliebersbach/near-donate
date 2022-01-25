@@ -1,0 +1,17 @@
+{
+  "name": "near-donate",
+  "version": "1.0.0",
+  "description": "Accountable donation platform on NEAR protocol.",
+  "main": "index.js",
+  "repository": "https://github.com/zliebersbach/near-donate",
+  "author": "Zoë Liebersbach <zoe@liebersbach.space>",
+  "license": "UNLICENSED",
+  "private": false,
+  "scripts": {
+    "test": "asp",
+    "build": "asb --wat"
+  },
+  "devDependencies": {
+    "near-sdk-as": "^3.2.3"
+  }
+}
