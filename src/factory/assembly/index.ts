@@ -9,8 +9,12 @@ export class Contract {
 
   accounts: PersistentSet<AccountId> = new PersistentSet<AccountId>("a");
 
+  private static sender_account_id(): string {
+    return `donate.${Context.sender}`
+  }
+
   create_account(): string {
-    const accountId = this.donate_account_id(Context.sender)
+    const accountId = Contract.sender_account_id()
 
     assert(env.isValidAccountID(accountId), "Donation account must have valid NEAR account name")
     assert(!this.has_account(accountId), "Donation account already exists")
@@ -31,10 +35,6 @@ export class Contract {
   }
 
   private has_account(accountId: string): bool {
-    return this.accounts.has(accountId);
-  }
-
-  private donate_account_id(senderAccountId: string): string {
-    return 'donate.' + senderAccountId;
+    return this.accounts.has(accountId)
   }
 }

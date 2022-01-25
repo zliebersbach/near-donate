@@ -37,3 +37,5 @@ Here are some of the resources used when creating this project:
 - [GitHub: starter--near-sdk-as](https://github.com/Learn-NEAR/starter--near-sdk-as)
 - [GitHub: NCD.L1.sample--meme-museum](https://github.com/Learn-NEAR/NCD.L1.sample--meme-museum)
 - [GitHub: simulation-testing](https://github.com/near-examples/simulation-testing)
+- [StackOverflow: Contract Predecessor vs Signer vs Current](https://stackoverflow.com/questions/67297064/contract-predecessor-vs-signer-vs-current/67300205#67300205)
+- [NEAR Docs: AssemblyScript](https://docs.near.org/docs/develop/contracts/as/intro)
