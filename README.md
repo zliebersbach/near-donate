@@ -1,9 +1,11 @@
-# near-donate
+# near-donate-as
 Accountable donation platform on NEAR protocol.
 
 ## Design
 
 The aim is to create a way for charitable organizations to receive donations on a blockchain, while also giving donors an equivalent quantity of a token that shows how much they have donated. I also believe it is important for the platform to recoup a small fee for promotion and development purposes.
+
+This proof-of-concept is in AssemblyScript, [but I am aware Rust should be used for financial use cases such as this.](https://docs.near.org/docs/develop/contracts/as/intro)
 
 ### Factory contract
 
@@ -39,3 +41,4 @@ Here are some of the resources used when creating this project:
 - [GitHub: simulation-testing](https://github.com/near-examples/simulation-testing)
 - [StackOverflow: Contract Predecessor vs Signer vs Current](https://stackoverflow.com/questions/67297064/contract-predecessor-vs-signer-vs-current/67300205#67300205)
 - [NEAR Docs: AssemblyScript](https://docs.near.org/docs/develop/contracts/as/intro)
+- [NEAR Docs: Deploy Smart Contracts to MainNet](https://docs.near.org/docs/tutorials/contracts/general/deploy-to-mainnet)

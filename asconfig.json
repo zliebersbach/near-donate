@@ -1,6 +1,6 @@
 {
   "workspaces": [
-    "src/factory",
-    "src/donate"
+    "src/donate",
+    "src/factory"
   ]
 }
