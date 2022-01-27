@@ -9,9 +9,10 @@
   "private": false,
   "scripts": {
     "test": "asp",
-    "build": "asb --wat"
+    "build": "asb"
   },
   "devDependencies": {
-    "near-sdk-as": "^3.2.3"
+    "near-sdk-as": "^3.2.3",
+    "source-map-support": "^0.5.21"
   }
 }
