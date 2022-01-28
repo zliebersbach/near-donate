@@ -18,11 +18,9 @@ const CODE = includeBytes("../../../build/release/donate.wasm")
 @nearBindgen
 export class Contract {
 
-  owners: PersistentSet<AccountId> = new PersistentSet<AccountId>("o")
   accounts: PersistentSet<AccountId> = new PersistentSet<AccountId>("a")
-  balance: Amount = u128.Zero
 
-  init(owners: AccountId[]): void {
+  init(): void {
     // contract may only be initialized once
     assert(!this.is_initialized(), "Contract is already initialized.")
 
@@ -31,14 +29,6 @@ export class Contract {
         u128.ge(context.attachedDeposit, MIN_ACCOUNT_BALANCE),
         "Minimum account balance must be attached to initialize this contract (3 NEAR)"
     )
-
-    // Must have least 1 owner account
-    assert(owners.length > 0, "Must specify at least 1 owner")
-
-    // set the owners using incoming metadata
-    for (let i = 0; i < owners.length; i++) {
-      this.owners.add(owners[i])
-    }
 
     logging.log("factory was created")
   }
@@ -106,84 +96,16 @@ export class Contract {
     }
   }
 
-  get_balance(): Amount {
-    this.assert_contract_is_initialized()
-
-    return this.balance
-  }
-
-  deposit_fees(): void {
-    this.assert_contract_is_initialized()
-    this.assert_called_by_donate_contract()
-
-    this.balance = u128.add(Context.attachedDeposit, this.balance)
-
-    logging.log("Received fee deposit of " + Context.attachedDeposit.toString() + " NEAR from [ " + Context.predecessor + " ]")
-  }
-
-  withdraw_fees(amount: Amount): void {
-    this.assert_contract_is_initialized()
-    this.assert_signed_by_owner()
-
-    assert(
-        u128.le(amount, this.balance),
-        "Amount is more than balance."
-    )
-
-    const account = Context.predecessor
-
-    const promise = ContractPromiseBatch.create(account)
-        .transfer(amount)
-
-    promise.then(Context.contractName).function_call(
-        "on_fees_withdrawn",
-        new FeesWithdrawnArgs(account, amount),
-        u128.Zero,
-        XCC_GAS
-    )
-  }
-
-  on_fees_withdrawn(account: AccountId, amount: Amount): void {
-    let results = ContractPromise.getResults();
-    let feesWithdrawn = results[0];
-
-    // Verifying the remote contract call succeeded.
-    // https://nomicon.io/RuntimeSpec/Components/BindingsSpec/PromisesAPI.html?highlight=promise#returns-3
-    switch (feesWithdrawn.status) {
-      case 0:
-        // promise result is not complete
-        logging.log("Fee withdrawal for [ " + account + " ] is pending")
-        break;
-      case 1:
-        // promise result is complete and successful
-        logging.log(`Transferred ${amount.toString()} NEAR to [ ${account} ]`)
-        this.balance = u128.sub(this.balance, amount)
-        break;
-      case 2:
-        // promise result is complete and failed
-        logging.log("Fee withdrawal for [ " + account + " ] failed")
-        break;
-
-      default:
-        logging.log("Unexpected value for promise result [" + feesWithdrawn.status.toString() + "]");
-        break;
-    }
+  get_accounts(): AccountId[] {
+    return this.accounts.values()
   }
 
   private is_initialized(): bool {
-    return this.owners.size > 0
+    return true
   }
 
   private assert_contract_is_initialized(): void {
     assert(this.is_initialized(), "Contract must be initialized first.")
-  }
-
-  private is_owner(): bool {
-    return this.owners.has(context.predecessor)
-  }
-
-  private assert_signed_by_owner(): void {
-    assert(this.is_owner(), "This method can only be called by contract owner")
   }
 
   private is_donate_contract(): bool {

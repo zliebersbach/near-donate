@@ -1,5 +1,30 @@
 import {Contract} from "../assembly";
-import {VMContext} from 'near-sdk-as';
+import {u128, VMContext} from 'near-sdk-as';
+import {MIN_ACCOUNT_BALANCE} from "../../utils";
+
+
+/**
+ * == CONFIG VALUES ============================================================
+ */
+const NAME = "usain";
+const FACTORY_ACCOUNT_ID = "factory";
+
+/**
+ * == HELPER FUNCTIONS =========================================================
+ */
+const useFactoryAsPredecessor = (): void => {
+  VMContext.setPredecessor_account_id(FACTORY_ACCOUNT_ID);
+};
+
+const attachMinBalance = (): void => {
+  VMContext.setAttached_deposit(MIN_ACCOUNT_BALANCE);
+};
+
+const doInitialize = (): void => {
+  attachMinBalance();
+  useFactoryAsPredecessor();
+  contract.init()
+}
 
 let contract: Contract
 
@@ -8,20 +33,23 @@ beforeEach(() => {
 })
 
 describe("Contract", () => {
-  // CHANGE method tests
 
-  it("creates account", () => {
-    const testerAccountId = 'tester'
-    VMContext.setSigner_account_id(testerAccountId)
+  it("creates a new factory with proper metadata", () => {
+    attachMinBalance()
 
-    expect(contract.create_account()).toStrictEqual(`donate.${testerAccountId}`)
+    contract.init()
+    const a = contract.get_accounts()
+
+    expect(a.length).toBe(0)
   })
 
-  // TODO: This needs to be a simulation test!
-  it("creates account and call method", () => {
-    const testerAccountId = 'tester'
-    VMContext.setSigner_account_id(testerAccountId)
+  it("prevents double initialization", () => {
+    attachMinBalance()
 
-    expect(contract.create_account()).toStrictEqual(`donate.${testerAccountId}`)
+    contract.init()
+
+    expect(() => {
+      contract.init()
+    }).toThrow("Contract is already initialized")
   })
 })
