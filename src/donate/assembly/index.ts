@@ -1,25 +1,26 @@
-import {context, Context, ContractPromise, ContractPromiseBatch, logging, PersistentVector, u128} from 'near-sdk-as';
 import {
-  AccountId,
-  Amount,
-  MIN_ACCOUNT_BALANCE,
-  MIN_DONATION_AMOUNT,
-  PAGE_SIZE,
-  PLATFORM_FEE_DIVISOR,
-  XCC_GAS
-} from "../../utils";
+  context,
+  Context,
+  ContractPromise,
+  ContractPromiseBatch,
+  logging,
+  PersistentSet,
+  storage,
+  u128
+} from 'near-sdk-as';
+import {AccountId, Amount, MIN_ACCOUNT_BALANCE, MIN_DONATION_AMOUNT, PLATFORM_FEE_DIVISOR, XCC_GAS} from "../../utils";
 import {DonateArgs, Donation, DonationsWithdrawnArgs} from "./models";
 
+
+const BALANCE_STORAGE_KEY = "b"
+const FACTORY_STORAGE_KEY = "f"
 
 @nearBindgen
 export class Contract {
 
-  factoryAccount: AccountId
+  donations: PersistentSet<Donation> = new PersistentSet<Donation>("d")
 
-  donations: PersistentVector<Donation> = new PersistentVector<Donation>("d")
-  balance: Amount = u128.Zero
-
-  init(factoryAccount: AccountId): void {
+  init(): void {
     // contract may only be initialized once
     assert(!this.is_initialized(), "Contract is already initialized.")
 
@@ -29,9 +30,16 @@ export class Contract {
         "Minimum account balance must be attached to initialize this contract (3 NEAR)"
     )
 
-    this.factoryAccount = factoryAccount
+    storage.setString(FACTORY_STORAGE_KEY, context.predecessor)
+    storage.set(BALANCE_STORAGE_KEY, u128.Zero)
 
-    logging.log("donate account was created")
+    logging.log("donation account was created")
+  }
+
+  get_factory(): AccountId {
+    this.assert_contract_is_initialized()
+
+    return storage.getSome<AccountId>(FACTORY_STORAGE_KEY)
   }
 
   donate(): void {
@@ -45,7 +53,7 @@ export class Contract {
     const feeAmount = u128.div(context.attachedDeposit, PLATFORM_FEE_DIVISOR)
     const donationAmount = u128.sub(context.attachedDeposit, feeAmount)
 
-    const promise = ContractPromiseBatch.create(this.factoryAccount)
+    const promise = ContractPromiseBatch.create(this.get_factory())
         .function_call(
             "deposit_fees",
             "{}",
@@ -74,9 +82,9 @@ export class Contract {
         break;
       case 1:
         // promise result is complete and successful
-        logging.log(`Received ${amount.toString()} NEAR`)
-        this.balance = u128.add(this.balance, amount)
-        this.donations.push(new Donation(context.predecessor, amount, context.blockTimestamp))
+        logging.log(`Successfully received ${amount.toString()} NEAR donation`)
+        storage.set(BALANCE_STORAGE_KEY, u128.add(this.get_balance(), amount))
+        this.donations.add(new Donation(context.predecessor, amount, context.blockTimestamp))
         break;
       case 2:
         // promise result is complete and failed
@@ -91,30 +99,18 @@ export class Contract {
 
   /**
    * Get list of donations received by this account.
-   *
-   * This function supports pagination.
-   * @param page
+   * TODO: Can we query list of function_call from NEAR blockchain?
    */
-  get_donations(page: u32 = 0): Donation[] {
+  get_donations(): Donation[] {
     this.assert_contract_is_initialized()
 
-    const startIndex = page * PAGE_SIZE;
-    const endIndex = Math.min(this.donations.length - 1, (page + 1) * PAGE_SIZE - 1)
-
-    assert(startIndex < endIndex, "Page does not exist.")
-
-    const results: Donation[] = []
-    for (let i = startIndex; i <= endIndex; i++) {
-      results.push(this.donations[i])
-    }
-
-    return results
+    return this.donations.values()
   }
 
   get_balance(): Amount {
     this.assert_contract_is_initialized()
 
-    return this.balance
+    return storage.getSome<u128>(BALANCE_STORAGE_KEY)
   }
 
   withdraw_donations(amount: Amount): void {
@@ -122,7 +118,7 @@ export class Contract {
     this.assert_signed_by_parent()
 
     assert(
-        u128.le(amount, this.balance),
+        u128.le(amount, this.get_balance()),
         "Amount is more than balance."
     )
 
@@ -152,8 +148,8 @@ export class Contract {
         break;
       case 1:
         // promise result is complete and successful
-        logging.log(`Transferred ${amount.toString()} NEAR`)
-        this.balance = u128.sub(this.balance, amount)
+        logging.log(`Successfully withdrawn ${amount.toString()} NEAR of donations`)
+        storage.set(BALANCE_STORAGE_KEY, u128.sub(this.get_balance(), amount))
         break;
       case 2:
         // promise result is complete and failed
@@ -167,7 +163,7 @@ export class Contract {
   }
 
   private is_initialized(): bool {
-    return this.factoryAccount != null
+    return storage.get<string>(FACTORY_STORAGE_KEY) != null
   }
 
   private assert_contract_is_initialized(): void {

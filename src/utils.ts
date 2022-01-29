@@ -16,8 +16,6 @@ export const MIN_ACCOUNT_BALANCE = u128.mul(ONE_NEAR, u128.from(3));
 export const MIN_DONATION_AMOUNT = u128.mul(ONE_NEAR, u128.from(1));
 export const PLATFORM_FEE_DIVISOR = u128.from("100")
 
-export const PAGE_SIZE = 25
-
 /**
  * Account IDs in NEAR are just strings.
  */

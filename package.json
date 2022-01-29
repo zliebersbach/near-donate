@@ -1,18 +1,21 @@
 {
-  "name": "near-donate",
+  "name": "near-donate-as",
   "version": "1.0.0",
   "description": "Accountable donation platform on NEAR protocol.",
   "main": "index.js",
-  "repository": "https://github.com/zliebersbach/near-donate",
+  "repository": "https://github.com/zliebersbach/near-donate-as",
   "author": "Zoë Liebersbach <zoe@liebersbach.space>",
   "license": "UNLICENSED",
   "private": false,
   "scripts": {
+    "build": "asb",
     "test": "asp",
-    "build": "asb"
+    "test:workspaces": "near-workspaces-ava",
+    "test:workspaces:testnet": "near-workspaces-ava --config ./ava.testnet.config.cjs"
   },
   "devDependencies": {
     "near-sdk-as": "^3.2.3",
-    "source-map-support": "^0.5.21"
+    "near-workspaces-ava": "^1.0.0",
+    "ts-node": "^10.4.0"
   }
 }
