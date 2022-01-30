@@ -20,11 +20,11 @@ jobs:
       uses: actions/setup-node@v2
       with:
         cache: 'yarn'
-    - name: Cache
-      uses: actions/cache@v2.1.7
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2
       with:
         path: build
-        key: build
+        retention-days: 30
     - run: yarn
     - run: yarn build
 
@@ -40,12 +40,8 @@ jobs:
       uses: actions/setup-node@v2
       with:
         cache: 'yarn'
-    - name: Cache
-      uses: actions/cache@v2.1.7
-      with:
-        path: build
-        key: build
+    - name: Download a Build Artifact
+      uses: actions/download-artifact@v2
     - run: yarn
-    - run: yarn build
     - run: yarn test
     - run: yarn test:workspaces
