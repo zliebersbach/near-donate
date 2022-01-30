@@ -1,6 +1,8 @@
 # near-donate-as
 Accountable donation platform on NEAR protocol.
 
+[![Build + Test](https://github.com/zliebersbach/near-donate-as/actions/workflows/build-test.yml/badge.svg)](https://github.com/zliebersbach/near-donate-as/actions/workflows/build-test.yml)
+
 ## Concept
 
 The aim is to create a way for charitable organizations to receive donations on a blockchain. I also believe it is important for the platform to recoup a small fee for promotion and development purposes.
