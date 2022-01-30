@@ -27,8 +27,6 @@ jobs:
         key: build
     - run: yarn
     - run: yarn build
-    - run: yarn test
-    - run: yarn test:workspaces
 
   test:
 
