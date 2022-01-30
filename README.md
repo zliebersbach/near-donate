@@ -42,6 +42,8 @@ The donate contract is created for each charity, receiving donations, facilitati
 **Enable factory-owned donation contracts to boost growth.** 
 Donation accounts could be created on behalf of charities, and with a disclaimer, we send any donations on to that charity. Perhaps we can integrate with DeFi to facilitate cross-chain donations (some charities may already accept donations on other blockchains). Unsure how this would best work with fiat.
 
+**1% for the planet, 1% for the platform philosophy.** Would be great to integrate with NEAR projects like Open Forest Protocol (OFP) to automatically commit a further 1% of donations to support their projects. 
+
 ## Learning
 
 Here are some of the resources used when creating this project:
