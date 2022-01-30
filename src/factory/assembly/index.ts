@@ -10,7 +10,7 @@ import {
   u128
 } from 'near-sdk-as';
 import {AccountId, MIN_ACCOUNT_BALANCE, XCC_GAS} from "../../utils";
-import {AccountCreatedArgs} from "./models";
+import {AccountAddedArgs} from "./models";
 import {DonateInitArgs} from "../../donate/assembly/models";
 
 // import donate contract bytecode as StaticArray
@@ -38,7 +38,7 @@ export class Contract {
     logging.log("factory was created")
   }
 
-  create_account(): void {
+  add_account(): void {
     this.assert_contract_is_initialized()
 
     // storing meme metadata requires some storage staking (balance locked to offset cost of data storage)
@@ -53,7 +53,7 @@ export class Contract {
     assert(env.isValidAccountID(account), "Donation account must have valid NEAR account name")
     assert(!this.has_account(account), "Donation account already exists")
 
-    logging.log("Attempting to create account [ " + account + " ]")
+    logging.log("Attempting to add account [ " + account + " ]")
 
     let promise = ContractPromiseBatch.create(account)
         .create_account()
@@ -68,14 +68,14 @@ export class Contract {
     )
 
     promise.then(context.contractName).function_call(
-        "on_account_created",
-        new AccountCreatedArgs(account),
+        "on_account_added",
+        new AccountAddedArgs(account),
         u128.Zero,
         XCC_GAS
     )
   }
 
-  on_account_created(account: AccountId): void {
+  on_account_added(account: AccountId): void {
     let results = ContractPromise.getResults();
     let accountCreated = results[0];
 

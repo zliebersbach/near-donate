@@ -29,8 +29,8 @@
 /**
  * Start off by importing Workspace from near-workspaces-ava.
  */
-import {AccessKey, AccountManager, addKey, fullAccessKey, Workspace} from 'near-workspaces-ava';
-import {DONATE_ACCOUNT_BALANCE, INIT_ACCOUNT_BALANCE, MIN_ACCOUNT_BALANCE, XCC_GAS} from "../utils";
+import {Workspace} from 'near-workspaces-ava';
+import {INIT_ACCOUNT_BALANCE, MIN_ACCOUNT_BALANCE, XCC_GAS} from "../utils";
 
 /**
  * Initialize a new workspace. In local sandbox mode, this will:
@@ -107,32 +107,29 @@ const workspace = Workspace.init(async ({root}) => {
  * saving an indentation level and avoiding one extra `await`.
  * (Extra credit: try rewriting this test using the "sugar-free" syntax.)
  */
-workspace.test('factory creates account', async (test, {root, alice, contract}) => {
+workspace.test('factory adds account', async (test, {root, alice, contract}) => {
   // Don't forget to `await` your calls!
-  const tx_result = await alice.call_raw(
+  await alice.call(
       contract,
-      'create_account',
+      'add_account',
       {},
       {
         attachedDeposit: MIN_ACCOUNT_BALANCE,
         gas: XCC_GAS
       }
   );
-  test.log(...tx_result.promiseErrors)
-  test.is(tx_result.promiseErrors.length, 0)
 
   // Assert that account was actually created
   const donate = contract.getAccount('alice')
   test.log(await donate.accountView())
 
-  // Assert that two things are identical using `test.is`
-  test.deepEqual(
-      // Note that Root called the contract with `root.call(contract, ...)`, but
-      // you view the contract with `contract.view`, since the account doing the
-      // viewing is irrelevant.
-      await contract.view('get_accounts', {}),
-      [donate.accountId],
-  );
+  // Assert that there is now one donation account in factory.
+  // Note that Root called the contract with `root.call(contract, ...)`, but
+  // you view the contract with `contract.view`, since the account doing the
+  // viewing is irrelevant.
+  const accounts: string[] = await contract.view('get_accounts', {})
+  test.is(accounts.length, 1)
+  test.is(accounts[0], donate.accountId)
 
   // Assert that we can call the deployed contract in the new donation account
   test.is(
