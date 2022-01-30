@@ -39,7 +39,12 @@ export class Contract {
     const donationAmount = u128.sub(context.attachedDeposit, feeAmount)
 
     const promise = ContractPromiseBatch.create(this.get_factory())
-        .transfer(feeAmount)
+        .function_call(
+            "deposit_fees",
+            "{}",
+            feeAmount,
+            XCC_GAS
+        )
 
     promise.then(context.contractName).function_call(
         "on_donation_sent",
@@ -148,8 +153,8 @@ export class Contract {
     return storage.getSome<u128>(BALANCE_STORAGE_KEY)
   }
 
-  private get_factory(): AccountId {
-    return context.contractName.split('.', 2).join('.')
+  get_factory(): AccountId {
+    return context.contractName.split('.', 2)[1]
   }
 
   private is_initialized(): bool {

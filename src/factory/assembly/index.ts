@@ -9,21 +9,22 @@ import {
   storage,
   u128
 } from 'near-sdk-as';
-import {AccountId, MIN_ACCOUNT_BALANCE, XCC_GAS} from "../../utils";
-import {AccountAddedArgs} from "./models";
+import {AccountId, Amount, MIN_ACCOUNT_BALANCE, XCC_GAS} from "../../utils";
+import {AccountAddedArgs, FeesWithdrawnArgs} from "./models";
 import {DonateInitArgs} from "../../donate/assembly/models";
 
 // import donate contract bytecode as StaticArray
 const CODE = includeBytes("../../../build/release/donate.wasm")
 
-const INIT_STORAGE_KEY = "i"
+const FEES_STORAGE_KEY = 'f'
 
 @nearBindgen
 export class Contract {
 
+  owners: PersistentSet<AccountId> = new PersistentSet<AccountId>("o")
   accounts: PersistentSet<AccountId> = new PersistentSet<AccountId>("a")
 
-  init(): void {
+  init(owners: AccountId[]): void {
     // contract may only be initialized once
     assert(!this.is_initialized(), "Contract is already initialized")
 
@@ -33,7 +34,14 @@ export class Contract {
         "Minimum account balance must be attached to initialize this contract (3 NEAR)"
     )
 
-    storage.set<bool>(INIT_STORAGE_KEY, true)
+    storage.set(FEES_STORAGE_KEY, u128.Zero)
+
+    // Must have least 1 owner account
+    assert(owners.length > 0, "Must specify at least 1 owner");
+
+    for (let i = 0; i < owners.length; i++) {
+      this.owners.add(owners[i])
+    }
 
     logging.log("factory was created")
   }
@@ -102,8 +110,76 @@ export class Contract {
     }
   }
 
+  deposit_fees(): void {
+    this.assert_contract_is_initialized()
+    this.assert_called_by_subaccount()
+
+    const fees = storage.getSome<u128>(FEES_STORAGE_KEY)
+    storage.set(FEES_STORAGE_KEY, u128.add(fees, context.attachedDeposit))
+  }
+
+  withdraw_fees(amount: Amount): void {
+    this.assert_contract_is_initialized()
+    this.assert_called_by_owner()
+
+    const owner = context.predecessor
+    const fees = storage.getSome<u128>(FEES_STORAGE_KEY)
+
+    assert(
+        u128.le(amount, fees),
+        'Attempting to withdraw too much.'
+    )
+
+    storage.set(FEES_STORAGE_KEY, u128.sub(fees, amount))
+
+    const promise = ContractPromiseBatch.create(owner)
+        .transfer(amount)
+
+    promise.then(context.contractName).function_call(
+        "on_fees_withdrawn",
+        new FeesWithdrawnArgs(owner, amount),
+        u128.Zero,
+        XCC_GAS
+    )
+  }
+
+  on_fees_withdrawn(owner: AccountId, amount: Amount): void {
+    let results = ContractPromise.getResults();
+    let feesWithdrawn = results[0];
+
+    // Verifying the remote contract call succeeded.
+    // https://nomicon.io/RuntimeSpec/Components/BindingsSpec/PromisesAPI.html?highlight=promise#returns-3
+    switch (feesWithdrawn.status) {
+      case 0:
+        // promise result is not complete
+        logging.log("Fee withdrawal to [ " + owner + " ] is pending")
+        break;
+      case 1:
+        // promise result is complete and successful
+        logging.log("Fee withdrawal to [ " + owner + " ] succeeded")
+        break;
+      case 2:
+        // promise result is complete and failed
+        logging.log("Fee withdrawal to [ " + owner + " ] failed")
+        storage.set(FEES_STORAGE_KEY, u128.add(storage.getSome<u128>(FEES_STORAGE_KEY), amount))
+        break;
+
+      default:
+        logging.log("Unexpected value for promise result [" + feesWithdrawn.status.toString() + "]");
+        break;
+    }
+  }
+
   get_accounts(): AccountId[] {
+    this.assert_contract_is_initialized()
+
     return this.accounts.values()
+  }
+
+  get_fees(): Amount {
+    this.assert_contract_is_initialized()
+
+    return storage.getSome<u128>(FEES_STORAGE_KEY)
   }
 
   private has_account(accountId: string): bool {
@@ -111,11 +187,19 @@ export class Contract {
   }
 
   private is_initialized(): bool {
-    return storage.hasKey(INIT_STORAGE_KEY)
+    return this.owners.size > 0 && storage.hasKey(FEES_STORAGE_KEY)
   }
 
   private assert_contract_is_initialized(): void {
     assert(this.is_initialized(), "Contract must be initialized first")
+  }
+
+  private is_owner(): bool {
+    return this.owners.has(context.predecessor)
+  }
+
+  private assert_called_by_owner(): void {
+    assert(this.is_owner(), "This function can only be called by owner")
   }
 
   private is_subaccount(): bool {
