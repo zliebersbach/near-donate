@@ -45,5 +45,6 @@ jobs:
       with:
         path: build
         key: build
+    - run: yarn
     - run: yarn test
     - run: yarn test:workspaces
