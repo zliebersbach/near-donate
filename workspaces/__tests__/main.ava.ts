@@ -29,7 +29,7 @@
 /**
  * Start off by importing Workspace from near-workspaces-ava.
  */
-import {Workspace} from 'near-workspaces-ava';
+import {BN, NEAR, Workspace} from 'near-workspaces-ava';
 import {INIT_ACCOUNT_BALANCE, MIN_ACCOUNT_BALANCE, XCC_GAS} from "../utils";
 
 /**
@@ -54,24 +54,14 @@ const workspace = Workspace.init(async ({root}) => {
       // which will be deployed to this account
       'build/release/factory.wasm',
 
-      // Provide `method` and `args` to call in the same transaction as the deploy
       {
+        initialBalance: '0',
+
+        // Provide `method` and `args` to call in the same transaction as the deploy
         method: 'init',
         attachedDeposit: MIN_ACCOUNT_BALANCE
       },
   );
-
-  // You can call any contract methods that you want executed before the
-  // beginning of all subsequent tests. In this example, Alice sets her status.
-  // Don't forget to `await` your calls!
-  /*await alice.call(
-      contract,
-      'create_account',
-      {},
-      {
-        attachedDeposit: MIN_ACCOUNT_BALANCE.toString()
-      }
-  );*/
 
   // Return the accounts that you want available in subsequent tests
   // (`root` is always available)
@@ -107,6 +97,19 @@ const workspace = Workspace.init(async ({root}) => {
  * saving an indentation level and avoiding one extra `await`.
  * (Extra credit: try rewriting this test using the "sugar-free" syntax.)
  */
+
+workspace.test('factory is initialized', async (test, {root, contract}) => {
+  const state = await contract.viewState()
+  test.log(state)
+  test.true(state.get('i').data.length > 0)
+
+  const balance = await contract.availableBalance()
+  test.is(balance.toString().length, MIN_ACCOUNT_BALANCE.length)
+
+  const accounts: string[] = await contract.view('get_accounts', {})
+  test.is(accounts.length, 0)
+})
+
 workspace.test('factory adds account', async (test, {root, alice, contract}) => {
   // Don't forget to `await` your calls!
   await alice.call(
@@ -121,6 +124,7 @@ workspace.test('factory adds account', async (test, {root, alice, contract}) => 
 
   // Assert that account was actually created
   const donate = contract.getAccount('alice')
+  test.true(await donate.exists())
   test.log(await donate.accountView())
 
   // Assert that there is now one donation account in factory.
@@ -137,50 +141,6 @@ workspace.test('factory adds account', async (test, {root, alice, contract}) => 
       '0',
   )
 });
-
-/*workspace.test('statuses initialized in Workspace.init', async (test, {alice, contract, root}) => {
-  // If you want to store a `view` in a local variable, you can inform
-  // TypeScript what sort of return value you expect.
-  const aliceStatus: string = await contract.view('get_status', {account_id: alice});
-  const rootStatus: null = await contract.view('get_status', {account_id: root});
-
-  test.is(aliceStatus, 'hello');
-
-  // Note that the test above sets a status for `root`, but here it's still
-  // null! This is because tests run concurrently in isolated environments.
-  test.is(rootStatus, null);
-});
-
-workspace.test('extra goodies', async (test, {alice, contract, root}) => {
-  /!**
-   * AVA's `test` object has all sorts of handy functions. For example: `test.log`.
-   * This is better than `console.log` in a couple ways:
-   *
-   *   - The log output only shows up if you pass `--verbose` or if the test fails.
-   *   - The output is nicely-formatted, right below the rest of the test output.
-   *
-   * Try it out using `npm run test -- --verbose` (with yarn: `yarn test --verbose`),
-   * or by adding `--verbose` to the `test` script in package.json
-   *!/
-  test.log({
-    alice: alice.accountId,
-    contract: contract.accountId,
-    root: root.accountId,
-  });
-
-  /!**
-   * The Account class from near-workspaces overrides `toJSON` so that removing
-   * `.accountId` from the lines above gives the same behavior.
-   * (This explains something about the example `contract.view` calls above:
-   * you may have noticed that they use things like `{account_id: root}`
-   * instead of `{account_id: root.accountId}`.)
-   * Here's a test to prove it; try updating the `test.log` above to see it.
-   *!/
-  test.is(
-      JSON.stringify({alice}), // This is JS shorthand for `{ alice: alice }`
-      JSON.stringify({alice: alice.accountId}),
-  );
-});*/
 
 // For more example tests, see:
 // https://github.com/near/workspaces-js/tree/main/__tests__
