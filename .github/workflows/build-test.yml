@@ -20,13 +20,13 @@ jobs:
       uses: actions/setup-node@v2
       with:
         cache: 'yarn'
+    - run: yarn
+    - run: yarn build
     - name: Upload a Build Artifact
       uses: actions/upload-artifact@v2
       with:
         path: build
         retention-days: 30
-    - run: yarn
-    - run: yarn build
 
   test:
 
