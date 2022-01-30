@@ -170,6 +170,12 @@ export class Contract {
     }
   }
 
+  get_owners(): AccountId[] {
+    this.assert_contract_is_initialized()
+
+    return this.owners.values()
+  }
+
   get_accounts(): AccountId[] {
     this.assert_contract_is_initialized()
 
