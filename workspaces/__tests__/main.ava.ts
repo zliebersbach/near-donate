@@ -44,7 +44,7 @@ const workspace = Workspace.init(async ({root}) => {
   // Create a subaccount of the root account, like `alice.sandbox`
   // (the actual account name is not guaranteed; you can get it with `alice.accountId`)
   const alice = await root.createAccount('alice', {initialBalance: INIT_ACCOUNT_BALANCE});
-  const forestco = await root.createAccount('bob', {initialBalance: INIT_ACCOUNT_BALANCE});
+  const forestco = await root.createAccount('forestco', {initialBalance: INIT_ACCOUNT_BALANCE});
 
   // Create a subaccount of the root account, and also deploy a contract to it
   const factory = await root.createAndDeploy(
