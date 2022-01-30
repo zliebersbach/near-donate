@@ -108,11 +108,14 @@ workspace.test('factory is initialized', async (test, {root, factory}) => {
   const balance = await factory.availableBalance()
   test.is(balance.toString().length, MIN_ACCOUNT_BALANCE.length)
 
-  const fees: string = await factory.view('get_fees', {})
-  test.is(fees, '0')
+  const owners: string[] = await factory.view('get_owners', {})
+  test.deepEqual(owners, [root.accountId])
 
   const accounts: string[] = await factory.view('get_accounts', {})
   test.is(accounts.length, 0)
+
+  const fees: string = await factory.view('get_fees', {})
+  test.is(fees, '0')
 })
 
 workspace.test('factory adds account', async (test, {root, forestco, factory}) => {
