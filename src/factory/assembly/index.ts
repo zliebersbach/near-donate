@@ -11,6 +11,7 @@ import {
 } from 'near-sdk-as';
 import {AccountId, MIN_ACCOUNT_BALANCE, XCC_GAS} from "../../utils";
 import {AccountCreatedArgs} from "./models";
+import {DonateInitArgs} from "../../donate/assembly/models";
 
 // import donate contract bytecode as StaticArray
 const CODE = includeBytes("../../../build/release/donate.wasm")
@@ -37,9 +38,8 @@ export class Contract {
     logging.log("factory was created")
   }
 
-  add_donate_account(): void {
+  create_account(): void {
     this.assert_contract_is_initialized()
-    this.assert_called_by_donate_account()
 
     // storing meme metadata requires some storage staking (balance locked to offset cost of data storage)
     assert(
@@ -47,21 +47,22 @@ export class Contract {
         "Minimum account balance must be attached to initialize an account (3 NEAR)"
     );
 
-    const account = context.predecessor
+    const owner = context.predecessor
+    const account = owner.split('.')[0] + '.' + context.contractName
 
-    // We don't need the following, context.predecessor is always valid
-    // assert(env.isValidAccountID(account), "Donation account must have valid NEAR account name")
+    assert(env.isValidAccountID(account), "Donation account must have valid NEAR account name")
     assert(!this.has_account(account), "Donation account already exists")
 
     logging.log("Attempting to create account [ " + account + " ]")
 
     let promise = ContractPromiseBatch.create(account)
+        .create_account()
         .deploy_contract(Uint8Array.wrap(changetype<ArrayBuffer>(CODE)))
         .add_full_access_key(base58.decode(context.senderPublicKey))
 
     promise.function_call(
         "init",
-        "{}",
+        new DonateInitArgs(owner),
         context.attachedDeposit,
         XCC_GAS
     )
@@ -105,23 +106,23 @@ export class Contract {
     return this.accounts.values()
   }
 
+  private has_account(accountId: string): bool {
+    return this.accounts.has(accountId)
+  }
+
   private is_initialized(): bool {
-    return storage.getPrimitive<bool>(INIT_STORAGE_KEY, false)
+    return storage.hasKey(INIT_STORAGE_KEY)
   }
 
   private assert_contract_is_initialized(): void {
     assert(this.is_initialized(), "Contract must be initialized first")
   }
 
-  private is_donate_account(): bool {
-    return context.predecessor.startsWith("donate.")
+  private is_subaccount(): bool {
+    return context.predecessor.endsWith(context.contractName)
   }
 
-  private assert_called_by_donate_account(): void {
-    assert(this.is_donate_account(), "This function can only be called by donate contract")
-  }
-
-  private has_account(accountId: string): bool {
-    return this.accounts.has(accountId)
+  private assert_called_by_subaccount(): void {
+    assert(this.is_subaccount(), "This function can only be called by donate contract")
   }
 }

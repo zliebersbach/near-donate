@@ -108,17 +108,10 @@ const workspace = Workspace.init(async ({root}) => {
  * (Extra credit: try rewriting this test using the "sugar-free" syntax.)
  */
 workspace.test('factory creates account', async (test, {root, alice, contract}) => {
-  // Create donate account for Alice
-  const donate = await alice.createAccount('donate', {initialBalance: DONATE_ACCOUNT_BALANCE, isSubAccount: true})
-
-  // TODO
-  // await contract.updateAccessKey(await donate.getKey())
-  // await donate.updateAccessKey(await contract.getKey())
-
   // Don't forget to `await` your calls!
-  const tx_result = await donate.call_raw(
+  const tx_result = await alice.call_raw(
       contract,
-      'add_donate_account',
+      'create_account',
       {},
       {
         attachedDeposit: MIN_ACCOUNT_BALANCE,
@@ -128,14 +121,24 @@ workspace.test('factory creates account', async (test, {root, alice, contract}) 
   test.log(...tx_result.promiseErrors)
   test.is(tx_result.promiseErrors.length, 0)
 
+  // Assert that account was actually created
+  const donate = contract.getAccount('alice')
+  test.log(await donate.accountView())
+
   // Assert that two things are identical using `test.is`
-  test.is(
+  test.deepEqual(
       // Note that Root called the contract with `root.call(contract, ...)`, but
       // you view the contract with `contract.view`, since the account doing the
       // viewing is irrelevant.
       await contract.view('get_accounts', {}),
       [donate.accountId],
   );
+
+  // Assert that we can call the deployed contract in the new donation account
+  test.is(
+      await donate.view('get_balance', {}),
+      '0',
+  )
 });
 
 /*workspace.test('statuses initialized in Workspace.init', async (test, {alice, contract, root}) => {

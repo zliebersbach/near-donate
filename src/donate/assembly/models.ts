@@ -10,17 +10,17 @@ export class Donation {
   }
 }
 
+
 @nearBindgen
-export class AccountInitArgs {
+export class DonateInitArgs {
   constructor(
-      public factoryAccount: AccountId
+      public owner: AccountId
   ) {
   }
 }
 
-
 @nearBindgen
-export class DonateArgs {
+export class DonationSentArgs {
   constructor(
       public amount: Amount
   ) {

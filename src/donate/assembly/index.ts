@@ -1,26 +1,17 @@
-import {
-  context,
-  Context,
-  ContractPromise,
-  ContractPromiseBatch,
-  logging,
-  PersistentSet,
-  storage,
-  u128
-} from 'near-sdk-as';
+import {context, ContractPromise, ContractPromiseBatch, logging, PersistentSet, storage, u128} from 'near-sdk-as';
 import {AccountId, Amount, MIN_ACCOUNT_BALANCE, MIN_DONATION_AMOUNT, PLATFORM_FEE_DIVISOR, XCC_GAS} from "../../utils";
-import {DonateArgs, Donation, DonationsWithdrawnArgs} from "./models";
+import {DonationSentArgs, Donation, DonationsWithdrawnArgs} from "./models";
 
 
+const OWNER_STORAGE_KEY = "o"
 const BALANCE_STORAGE_KEY = "b"
-const FACTORY_STORAGE_KEY = "f"
 
 @nearBindgen
 export class Contract {
 
   donations: PersistentSet<Donation> = new PersistentSet<Donation>("d")
 
-  init(): void {
+  init(owner: AccountId): void {
     // contract may only be initialized once
     assert(!this.is_initialized(), "Contract is already initialized.")
 
@@ -30,19 +21,13 @@ export class Contract {
         "Minimum account balance must be attached to initialize this contract (3 NEAR)"
     )
 
-    storage.setString(FACTORY_STORAGE_KEY, context.predecessor)
+    storage.set(OWNER_STORAGE_KEY, owner)
     storage.set(BALANCE_STORAGE_KEY, u128.Zero)
 
     logging.log("donation account was created")
   }
 
-  get_factory(): AccountId {
-    this.assert_contract_is_initialized()
-
-    return storage.getSome<AccountId>(FACTORY_STORAGE_KEY)
-  }
-
-  donate(): void {
+  send_donation(): void {
     this.assert_contract_is_initialized()
 
     assert(
@@ -54,22 +39,17 @@ export class Contract {
     const donationAmount = u128.sub(context.attachedDeposit, feeAmount)
 
     const promise = ContractPromiseBatch.create(this.get_factory())
-        .function_call(
-            "deposit_fees",
-            "{}",
-            feeAmount,
-            XCC_GAS
-        )
+        .transfer(feeAmount)
 
-    promise.then(Context.contractName).function_call(
-        "on_donate",
-        new DonateArgs(donationAmount),
+    promise.then(context.contractName).function_call(
+        "on_donation_sent",
+        new DonationSentArgs(donationAmount),
         u128.Zero,
         XCC_GAS
     )
   }
 
-  on_donate(amount: Amount): void {
+  on_donation_sent(amount: Amount): void {
     let results = ContractPromise.getResults();
     let donate = results[0];
 
@@ -97,37 +77,21 @@ export class Contract {
     }
   }
 
-  /**
-   * Get list of donations received by this account.
-   * TODO: Can we query list of function_call from NEAR blockchain?
-   */
-  get_donations(): Donation[] {
-    this.assert_contract_is_initialized()
-
-    return this.donations.values()
-  }
-
-  get_balance(): Amount {
-    this.assert_contract_is_initialized()
-
-    return storage.getSome<u128>(BALANCE_STORAGE_KEY)
-  }
-
   withdraw_donations(amount: Amount): void {
     this.assert_contract_is_initialized()
-    this.assert_signed_by_parent()
+    this.assert_signed_by_owner()
 
     assert(
         u128.le(amount, this.get_balance()),
         "Amount is more than balance."
     )
 
-    const account = Context.predecessor
+    const account = context.predecessor
 
     const promise = ContractPromiseBatch.create(account)
         .transfer(amount)
 
-    promise.then(Context.contractName).function_call(
+    promise.then(context.contractName).function_call(
         "on_donations_withdrawn",
         new DonationsWithdrawnArgs(amount),
         u128.Zero,
@@ -162,19 +126,45 @@ export class Contract {
     }
   }
 
+  /**
+   * Get list of donations received by this account.
+   * TODO: Can we query list of function_call from NEAR blockchain?
+   */
+  get_donations(): Donation[] {
+    this.assert_contract_is_initialized()
+
+    return this.donations.values()
+  }
+
+  get_owner(): AccountId {
+    this.assert_contract_is_initialized()
+
+    return storage.getSome<string>(OWNER_STORAGE_KEY)
+  }
+
+  get_balance(): Amount {
+    this.assert_contract_is_initialized()
+
+    return storage.getSome<u128>(BALANCE_STORAGE_KEY)
+  }
+
+  private get_factory(): AccountId {
+    return context.contractName.split('.', 2).join('.')
+  }
+
   private is_initialized(): bool {
-    return storage.get<string>(FACTORY_STORAGE_KEY) != null
+    return storage.hasKey(OWNER_STORAGE_KEY) && storage.hasKey(BALANCE_STORAGE_KEY)
   }
 
   private assert_contract_is_initialized(): void {
     assert(this.is_initialized(), "Contract must be initialized first.")
   }
 
-  private is_parent(): bool {
-    return Context.contractName.endsWith(Context.predecessor)
+  private is_owner(): bool {
+    return context.predecessor == storage.getString(OWNER_STORAGE_KEY)
   }
 
-  private assert_signed_by_parent(): void {
-    assert(this.is_parent(), "Must be called by parent. e.g. myorg.near if your donation account is donate.myorg.near")
+  private assert_signed_by_owner(): void {
+    assert(this.is_owner(), "Must be called by owner. e.g. myorg.near if your donation account is myorg.donate.near")
   }
 }
