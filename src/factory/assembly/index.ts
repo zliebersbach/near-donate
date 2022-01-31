@@ -40,6 +40,7 @@ export class Contract {
     assert(owners.length > 0, "Must specify at least 1 owner");
 
     for (let i = 0; i < owners.length; i++) {
+      assert(env.isValidAccountID(owners[i]), "Owner account must have valid NEAR account name")
       this.owners.add(owners[i])
     }
 
@@ -112,7 +113,7 @@ export class Contract {
 
   deposit_fees(): void {
     this.assert_contract_is_initialized()
-    this.assert_called_by_subaccount()
+    this.assert_called_by_account()
 
     storage.set(FEES_STORAGE_KEY, u128.add(this.get_fees(), context.attachedDeposit))
   }
@@ -209,14 +210,14 @@ export class Contract {
   }
 
   private assert_called_by_owner(): void {
-    assert(this.is_owner(), "This function can only be called by owner")
+    assert(this.is_owner(), "This function can only be called by owners")
   }
 
-  private is_subaccount(): bool {
-    return context.predecessor.endsWith(context.contractName)
+  private is_account(): bool {
+    return this.has_account(context.predecessor)
   }
 
-  private assert_called_by_subaccount(): void {
-    assert(this.is_subaccount(), "This function can only be called by donate contract")
+  private assert_called_by_account(): void {
+    assert(this.is_account(), "This function can only be called by accounts")
   }
 }

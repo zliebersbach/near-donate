@@ -1,4 +1,4 @@
-import {context, ContractPromise, ContractPromiseBatch, logging, PersistentSet, storage, u128} from 'near-sdk-as';
+import {context, ContractPromise, ContractPromiseBatch, env, logging, PersistentSet, storage, u128} from 'near-sdk-as';
 import {
   AccountId,
   Amount,
@@ -28,6 +28,8 @@ export class Contract {
         u128.ge(context.attachedDeposit, MIN_ACCOUNT_BALANCE),
         "Minimum account balance must be attached to initialize this contract (3 NEAR)"
     )
+
+    assert(env.isValidAccountID(owner), "Owner account must have valid NEAR account name")
 
     storage.set(OWNER_STORAGE_KEY, owner)
     storage.set(BALANCE_STORAGE_KEY, u128.Zero)
