@@ -154,7 +154,8 @@ export class Contract {
   }
 
   get_factory(): AccountId {
-    return context.contractName.split('.', 2)[1]
+    // The factory account is the parent account of this contract
+    return context.contractName.split('.').splice(1).join('.')
   }
 
   private is_initialized(): bool {

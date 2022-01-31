@@ -29,8 +29,14 @@
 /**
  * Start off by importing Workspace from near-workspaces-ava.
  */
-import {BN, NEAR, Workspace} from 'near-workspaces-ava';
-import {INIT_ACCOUNT_BALANCE, MIN_ACCOUNT_BALANCE, MIN_DONATION_AMOUNT, XCC_GAS} from "../utils";
+import {BN, Gas, NEAR, parse, Workspace} from 'near-workspaces-ava';
+import {
+  INIT_ACCOUNT_BALANCE,
+  MIN_ACCOUNT_BALANCE,
+  MIN_DONATION_AMOUNT,
+  MIN_DONATION_AMOUNT_FEES, MIN_DONATION_AMOUNT_RECEIVED,
+  XCC_GAS
+} from "../utils";
 
 /**
  * Initialize a new workspace. In local sandbox mode, this will:
@@ -43,8 +49,8 @@ import {INIT_ACCOUNT_BALANCE, MIN_ACCOUNT_BALANCE, MIN_DONATION_AMOUNT, XCC_GAS}
 const workspace = Workspace.init(async ({root}) => {
   // Create a subaccount of the root account, like `alice.sandbox`
   // (the actual account name is not guaranteed; you can get it with `alice.accountId`)
-  const alice = await root.createAccount('alice', {initialBalance: INIT_ACCOUNT_BALANCE});
-  const forestco = await root.createAccount('forestco', {initialBalance: INIT_ACCOUNT_BALANCE});
+  const alice = await root.createAccount('alice', {initialBalance: INIT_ACCOUNT_BALANCE.toString()});
+  const forestco = await root.createAccount('forestco', {initialBalance: INIT_ACCOUNT_BALANCE.toString()});
 
   // Create a subaccount of the root account, and also deploy a contract to it
   const factory = await root.createAndDeploy(
@@ -105,15 +111,19 @@ workspace.test('factory is initialized', async (test, {root, factory}) => {
   test.log(state)
   test.true(state.get('f').data.length > 0)
 
+  // Assert balance is in correct range
   const balance = await factory.availableBalance()
-  test.is(balance.toString().length, MIN_ACCOUNT_BALANCE.length)
+  test.is(balance.toString().length, MIN_ACCOUNT_BALANCE.toString().length)
 
+  // Assert owners have been correctly set
   const owners: string[] = await factory.view('get_owners', {})
   test.deepEqual(owners, [root.accountId])
 
+  // Assert accounts are empty
   const accounts: string[] = await factory.view('get_accounts', {})
   test.is(accounts.length, 0)
 
+  // Assert fees are set to zero
   const fees: string = await factory.view('get_fees', {})
   test.is(fees, '0')
 })
@@ -148,9 +158,15 @@ workspace.test('factory adds account', async (test, {root, forestco, factory}) =
       await donate.view('get_balance', {}),
       '0',
   )
+
+  // Assert that the donation account has the correct factory account
+  test.is(
+      await donate.view('get_factory', {}),
+      factory.accountId,
+  )
 });
 
-workspace.test('alice can send donation', async (test, {alice, forestco, factory}) => {
+workspace.test('alice can send donation and factory receives fees', async (test, {alice, forestco, factory}) => {
   // Don't forget to `await` your calls!
   await forestco.call(
       factory,
@@ -182,11 +198,11 @@ workspace.test('alice can send donation', async (test, {alice, forestco, factory
 
   // Assert donation contract has updated balance
   const balance: string = await donate.view('get_balance', {})
-  test.log(balance)
+  test.is(balance, MIN_DONATION_AMOUNT_RECEIVED.toString())
 
   // Assert factory contract has updated fees
   const new_fees: string = await factory.view('get_fees', {})
-  test.log(new_fees)
+  test.is(new_fees, MIN_DONATION_AMOUNT_FEES.toString())
 })
 
 // For more example tests, see:
