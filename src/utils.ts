@@ -13,7 +13,8 @@ import {u128} from "near-sdk-as";
 export const ONE_NEAR = u128.from('1000000000000000000000000');
 export const XCC_GAS = 30000000000000;
 export const MIN_ACCOUNT_BALANCE = u128.mul(ONE_NEAR, u128.from(3));
-export const MIN_DONATION_AMOUNT = u128.mul(ONE_NEAR, u128.from(1));
+export const MIN_DONATION_AMOUNT = ONE_NEAR;
+export const MIN_WITHDRAWAL_AMOUNT = ONE_NEAR;
 export const PLATFORM_FEE_DIVISOR = u128.from("100")
 
 /**

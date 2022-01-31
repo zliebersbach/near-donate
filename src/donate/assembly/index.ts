@@ -1,5 +1,13 @@
 import {context, ContractPromise, ContractPromiseBatch, logging, PersistentSet, storage, u128} from 'near-sdk-as';
-import {AccountId, Amount, MIN_ACCOUNT_BALANCE, MIN_DONATION_AMOUNT, PLATFORM_FEE_DIVISOR, XCC_GAS} from "../../utils";
+import {
+  AccountId,
+  Amount,
+  MIN_ACCOUNT_BALANCE,
+  MIN_DONATION_AMOUNT,
+  MIN_WITHDRAWAL_AMOUNT,
+  PLATFORM_FEE_DIVISOR,
+  XCC_GAS
+} from "../../utils";
 import {DonationSentArgs, Donation, DonationsWithdrawnArgs} from "./models";
 
 
@@ -85,6 +93,11 @@ export class Contract {
   withdraw_donations(amount: Amount): void {
     this.assert_contract_is_initialized()
     this.assert_signed_by_owner()
+
+    assert(
+        u128.ge(amount, MIN_WITHDRAWAL_AMOUNT),
+        'Attempting to withdraw less than minimum amount (1 NEAR)'
+    )
 
     const owner = context.predecessor
     const balance = storage.getSome<u128>(BALANCE_STORAGE_KEY)

@@ -1,40 +1,16 @@
 /**
- * Welcome to near-workspaces-ava!
- *
- * This is a working test which checks the functionality of [the status-message
- * contract][1]. For quick reference, here's the contract's implementation:
- *
- *     impl StatusMessage {
- *         pub fn set_status(&mut self, message: String) {
- *             let account_id = env::signer_account_id();
- *             self.records.insert(&account_id, &message);
- *         }
-
- *         pub fn get_status(&self, account_id: String) -> Option<String> {
- *             return self.records.get(&account_id);
- *         }
- *     }
- *
- * As you can see, this contract only has two methods, a setter and a getter.
- * The setter sets a status message for the account that signed the call to the
- * contract. The getter accepts an `account_id` param and returns the status for
- * that account.
- *
- * The tests below create a local blockchain with this contract deployed to
- * one account and two more accounts which store statuses in the contract.
- *
- *   [1]: https://github.com/near-examples/rust-status-message/tree/4e4767db257b748950bb3393352e2fff6c8e9b17
- */
-
-/**
  * Start off by importing Workspace from near-workspaces-ava.
  */
-import {BN, Gas, NEAR, parse, Workspace} from 'near-workspaces-ava';
+import {Workspace} from 'near-workspaces-ava';
 import {
   INIT_ACCOUNT_BALANCE,
+  LARGE_DONATION_AMOUNT,
+  LARGE_DONATION_AMOUNT_FEES,
+  LARGE_DONATION_AMOUNT_RECEIVED,
   MIN_ACCOUNT_BALANCE,
   MIN_DONATION_AMOUNT,
-  MIN_DONATION_AMOUNT_FEES, MIN_DONATION_AMOUNT_RECEIVED,
+  MIN_DONATION_AMOUNT_FEES,
+  MIN_DONATION_AMOUNT_RECEIVED,
   XCC_GAS
 } from "../utils";
 
@@ -47,9 +23,14 @@ import {
  *   - Shut down the newly created blockchain, but *save the data*
  */
 const workspace = Workspace.init(async ({root}) => {
-  // Create a subaccount of the root account, like `alice.sandbox`
+  // Create subaccounts of the root account, like `alice.sandbox`
   // (the actual account name is not guaranteed; you can get it with `alice.accountId`)
+
+  // This account belongs to the contract owner
+  const zoe = await root.createAccount('zoe', {initialBalance: INIT_ACCOUNT_BALANCE.toString()});
+  // This account belongs to a beautiful, charitable person
   const alice = await root.createAccount('alice', {initialBalance: INIT_ACCOUNT_BALANCE.toString()});
+  // This account belongs to a charity
   const forestco = await root.createAccount('forestco', {initialBalance: INIT_ACCOUNT_BALANCE.toString()});
 
   // Create a subaccount of the root account, and also deploy a contract to it
@@ -66,14 +47,14 @@ const workspace = Workspace.init(async ({root}) => {
 
         // Provide `method` and `args` to call in the same transaction as the deploy
         method: 'init',
-        args: {owners: [root.accountId]},
+        args: {owners: [zoe.accountId]},
         attachedDeposit: MIN_ACCOUNT_BALANCE
       },
   );
 
   // Return the accounts that you want available in subsequent tests
   // (`root` is always available)
-  return {alice, forestco, factory};
+  return {zoe, alice, forestco, factory};
 });
 
 /**
@@ -106,7 +87,7 @@ const workspace = Workspace.init(async ({root}) => {
  * (Extra credit: try rewriting this test using the "sugar-free" syntax.)
  */
 
-workspace.test('factory is initialized', async (test, {root, factory}) => {
+workspace.test('factory is initialized', async (test, {zoe, factory}) => {
   const state = await factory.viewState()
   test.log(state)
   test.true(state.get('f').data.length > 0)
@@ -117,7 +98,7 @@ workspace.test('factory is initialized', async (test, {root, factory}) => {
 
   // Assert owners have been correctly set
   const owners: string[] = await factory.view('get_owners', {})
-  test.deepEqual(owners, [root.accountId])
+  test.deepEqual(owners, [zoe.accountId])
 
   // Assert accounts are empty
   const accounts: string[] = await factory.view('get_accounts', {})
@@ -226,7 +207,7 @@ workspace.test('forestco can withdraw donations', async (test, {alice, forestco,
       'send_donation',
       {},
       {
-        attachedDeposit: MIN_DONATION_AMOUNT,
+        attachedDeposit: LARGE_DONATION_AMOUNT,
         gas: XCC_GAS,
       }
   )
@@ -238,7 +219,7 @@ workspace.test('forestco can withdraw donations', async (test, {alice, forestco,
       donate,
       'withdraw_donations',
       {
-        amount: MIN_DONATION_AMOUNT_RECEIVED,
+        amount: LARGE_DONATION_AMOUNT_RECEIVED,
       },
       {
         gas: XCC_GAS,
@@ -255,10 +236,66 @@ workspace.test('forestco can withdraw donations', async (test, {alice, forestco,
   test.log({
     balanceInitial: forestco_balance.toString(),
     balanceNew: forestco_new_balance.toString(),
-    withdrawalAmount: MIN_DONATION_AMOUNT_RECEIVED.toString(),
+    withdrawalAmount: LARGE_DONATION_AMOUNT_RECEIVED.toString(),
     withdrawalDelta: forestco_balance_delta.toString(),
   })
-  test.is(forestco_balance_delta.toString().length, MIN_DONATION_AMOUNT_RECEIVED.toString().length)
+  test.is(forestco_balance_delta.toString().length, LARGE_DONATION_AMOUNT_RECEIVED.toString().length)
+})
+
+workspace.test('owners can withdraw fees', async (test, {zoe, alice, forestco, factory}) => {
+  // Don't forget to `await` your calls!
+  await forestco.call(
+      factory,
+      'add_account',
+      {},
+      {
+        attachedDeposit: MIN_ACCOUNT_BALANCE,
+        gas: XCC_GAS
+      }
+  );
+
+  // Assert that account was actually created
+  const donate = factory.getAccount(forestco.accountId.split('.')[0])
+  test.true(await donate.exists())
+
+  await alice.call(
+      donate,
+      'send_donation',
+      {},
+      {
+        attachedDeposit: LARGE_DONATION_AMOUNT,
+        gas: XCC_GAS,
+      }
+  )
+
+  // Get initial root account balance
+  const zoe_balance = await zoe.availableBalance()
+
+  const call_raw = await zoe.call_raw(
+      factory,
+      'withdraw_fees',
+      {
+        amount: LARGE_DONATION_AMOUNT_FEES,
+      },
+      {
+        gas: XCC_GAS
+      }
+  )
+
+  // Assert factory contract has correct fees
+  const factory_fees: string = await factory.view('get_fees', {})
+  test.is(factory_fees, '0')
+
+  // Assert contract owner account has updated balance
+  const zoe_new_balance = await zoe.availableBalance()
+  const zoe_balance_delta = zoe_new_balance.sub(zoe_balance)
+  test.log({
+    balanceInitial: zoe_balance.toString(),
+    balanceNew: zoe_new_balance.toString(),
+    withdrawalAmount: LARGE_DONATION_AMOUNT_FEES.toString(),
+    withdrawalDelta: zoe_balance_delta.toString(),
+  })
+  test.is(zoe_balance_delta.toString().length, LARGE_DONATION_AMOUNT_FEES.toString().length - 1)
 })
 
 // For more example tests, see:

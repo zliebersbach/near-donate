@@ -9,7 +9,7 @@ import {
   storage,
   u128
 } from 'near-sdk-as';
-import {AccountId, Amount, MIN_ACCOUNT_BALANCE, XCC_GAS} from "../../utils";
+import {AccountId, Amount, MIN_ACCOUNT_BALANCE, MIN_WITHDRAWAL_AMOUNT, XCC_GAS} from "../../utils";
 import {AccountAddedArgs, FeesWithdrawnArgs} from "./models";
 import {DonateInitArgs} from "../../donate/assembly/models";
 
@@ -120,6 +120,11 @@ export class Contract {
   withdraw_fees(amount: Amount): void {
     this.assert_contract_is_initialized()
     this.assert_called_by_owner()
+
+    assert(
+        u128.ge(amount, MIN_WITHDRAWAL_AMOUNT),
+        'Attempting to withdraw less than minimum amount (1 NEAR)'
+    )
 
     const owner = context.predecessor
     const fees = this.get_fees()
