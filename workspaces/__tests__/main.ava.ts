@@ -141,7 +141,7 @@ workspace.test('factory adds account', async (test, {root, forestco, factory}) =
   );
 
   // Assert that account was actually created
-  const donate = factory.getAccount('forestco')
+  const donate = factory.getAccount(forestco.accountId.split('.')[0])
   test.true(await donate.exists())
   test.log(await donate.accountView())
 
@@ -179,7 +179,7 @@ workspace.test('alice can send donation and factory receives fees', async (test,
   );
 
   // Assert that account was actually created
-  const donate = factory.getAccount('forestco')
+  const donate = factory.getAccount(forestco.accountId.split('.')[0])
   test.true(await donate.exists())
 
   // Assert initial fee balance is zero
@@ -203,6 +203,62 @@ workspace.test('alice can send donation and factory receives fees', async (test,
   // Assert factory contract has updated fees
   const new_fees: string = await factory.view('get_fees', {})
   test.is(new_fees, MIN_DONATION_AMOUNT_FEES.toString())
+})
+
+workspace.test('forestco can withdraw donations', async (test, {alice, forestco, factory}) => {
+  // Don't forget to `await` your calls!
+  await forestco.call(
+      factory,
+      'add_account',
+      {},
+      {
+        attachedDeposit: MIN_ACCOUNT_BALANCE,
+        gas: XCC_GAS
+      }
+  );
+
+  // Assert that account was actually created
+  const donate = factory.getAccount(forestco.accountId.split('.')[0])
+  test.true(await donate.exists())
+
+  await alice.call(
+      donate,
+      'send_donation',
+      {},
+      {
+        attachedDeposit: MIN_DONATION_AMOUNT,
+        gas: XCC_GAS,
+      }
+  )
+
+  // Get initial forestco account balance
+  const forestco_balance = await forestco.availableBalance()
+
+  await forestco.call_raw(
+      donate,
+      'withdraw_donations',
+      {
+        amount: MIN_DONATION_AMOUNT_RECEIVED,
+      },
+      {
+        gas: XCC_GAS,
+      }
+  )
+
+  // Assert donation contract has correct balance
+  const donate_balance: string = await donate.view('get_balance', {})
+  test.is(donate_balance, '0')
+
+  // Assert forestco account has updated balance
+  const forestco_new_balance = await forestco.availableBalance()
+  const forestco_balance_delta = forestco_new_balance.sub(forestco_balance)
+  test.log({
+    balanceInitial: forestco_balance.toString(),
+    balanceNew: forestco_new_balance.toString(),
+    withdrawalAmount: MIN_DONATION_AMOUNT_RECEIVED.toString(),
+    withdrawalDelta: forestco_balance_delta.toString(),
+  })
+  test.is(forestco_balance_delta.toString().length, MIN_DONATION_AMOUNT_RECEIVED.toString().length)
 })
 
 // For more example tests, see:

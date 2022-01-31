@@ -86,14 +86,17 @@ export class Contract {
     this.assert_contract_is_initialized()
     this.assert_signed_by_owner()
 
+    const owner = context.predecessor
+    const balance = storage.getSome<u128>(BALANCE_STORAGE_KEY)
+
     assert(
-        u128.le(amount, this.get_balance()),
-        "Amount is more than balance."
+        u128.le(amount, balance),
+        'Attempting to withdraw more than donation balance.'
     )
 
-    const account = context.predecessor
+    storage.set(BALANCE_STORAGE_KEY, u128.sub(balance, amount))
 
-    const promise = ContractPromiseBatch.create(account)
+    const promise = ContractPromiseBatch.create(owner)
         .transfer(amount)
 
     promise.then(context.contractName).function_call(
@@ -118,11 +121,11 @@ export class Contract {
       case 1:
         // promise result is complete and successful
         logging.log(`Successfully withdrawn ${amount.toString()} NEAR of donations`)
-        storage.set(BALANCE_STORAGE_KEY, u128.sub(this.get_balance(), amount))
         break;
       case 2:
         // promise result is complete and failed
         logging.log("Donation withdrawal failed")
+        storage.set(BALANCE_STORAGE_KEY, u128.add(this.get_balance(), amount))
         break;
 
       default:

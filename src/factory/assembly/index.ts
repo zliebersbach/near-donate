@@ -114,8 +114,7 @@ export class Contract {
     this.assert_contract_is_initialized()
     this.assert_called_by_subaccount()
 
-    const fees = storage.getSome<u128>(FEES_STORAGE_KEY)
-    storage.set(FEES_STORAGE_KEY, u128.add(fees, context.attachedDeposit))
+    storage.set(FEES_STORAGE_KEY, u128.add(this.get_fees(), context.attachedDeposit))
   }
 
   withdraw_fees(amount: Amount): void {
@@ -123,11 +122,11 @@ export class Contract {
     this.assert_called_by_owner()
 
     const owner = context.predecessor
-    const fees = storage.getSome<u128>(FEES_STORAGE_KEY)
+    const fees = this.get_fees()
 
     assert(
         u128.le(amount, fees),
-        'Attempting to withdraw too much.'
+        'Attempting to withdraw more than fee balance.'
     )
 
     storage.set(FEES_STORAGE_KEY, u128.sub(fees, amount))
@@ -161,7 +160,7 @@ export class Contract {
       case 2:
         // promise result is complete and failed
         logging.log("Fee withdrawal to [ " + owner + " ] failed")
-        storage.set(FEES_STORAGE_KEY, u128.add(storage.getSome<u128>(FEES_STORAGE_KEY), amount))
+        storage.set(FEES_STORAGE_KEY, u128.add(this.get_fees(), amount))
         break;
 
       default:
