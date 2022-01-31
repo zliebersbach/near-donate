@@ -8,10 +8,12 @@
   "license": "UNLICENSED",
   "private": false,
   "scripts": {
+    "build": "echo \"DOES NOT SUPPORT DEBUG BUILDS - CREATING RELEASE BUILD\" && yarn build:release",
     "build:release": "asb",
-    "test": "asp",
-    "test:workspaces": "near-workspaces-ava",
-    "test:workspaces:testnet": "near-workspaces-ava --config ./ava.testnet.config.cjs"
+    "test": "yarn test:unit && yarn test:simulate && yarn test:simulate:testnet",
+    "test:unit": "asp",
+    "test:simulate": "near-workspaces-ava",
+    "test:simulate:testnet": "near-workspaces-ava --config ./ava.testnet.config.cjs"
   },
   "devDependencies": {
     "near-sdk-as": "^3.2.3",

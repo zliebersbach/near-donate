@@ -22,11 +22,13 @@ Unit tests are written in `as-pect` and simulation tests are written in `ava` (u
 ### Build and test
 
 ```shell
-$ yarn                          # Install dependencies
-$ yarn build                    # Build contracts (WASM files)
-$ yarn test                     # Run unit tests
-$ yarn test:workspaces          # Run workspaces (simulation) tests
-$ yarn test:workspaces:testnet  # Run workspaces (simulation) tests on testnet
+$ yarn                        # Install dependencies
+$ yarn build                  # Build debug contracts (WASM files) - NOT YET SUPPORTED
+$ yarn build:release          # Build release contracts (WASM files)
+$ yarn test                   # Run all tests
+$ yarn test:unit              # Run unit tests
+$ yarn test:simulate          # Run simulation tests
+$ yarn test:simulate:testnet  # Run simulation tests on testnet
 ```
 
 ### Run on testnet
