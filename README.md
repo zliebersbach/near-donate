@@ -15,6 +15,31 @@ This article is a great read about what has already happened in the blockchain s
 
 What is a charity? https://www.ionos.com/startupguide/get-started/what-is-a-charity/
 
+## Usage
+
+Unit tests are written in `as-pect` and simulation tests are written in `ava` (using `near-workspaces-ava`). 
+
+### Build and test
+
+```shell
+$ yarn                          # Install dependencies
+$ yarn build                    # Build contracts (WASM files)
+$ yarn test                     # Run unit tests
+$ yarn test:workspaces          # Run workspaces (simulation) tests
+$ yarn test:workspaces:testnet  # Run workspaces (simulation) tests on testnet
+```
+
+### Run on testnet
+
+```shell
+$ ./scripts/0.deploy-factory.sh       # Deploys the contract
+$ ./scripts/1.add-donation-account.sh # Creates a new donation account
+$ ./scripts/2.send-donation.sh        # Send a donation to the donation account
+$ ./scripts/3a.withdraw-donations.sh  # Withdraw donations to the charity account
+$ ./scripts/3b.withdraw-fees.sh       # Withdraw platform fees to an owner account
+$ ./scripts/x.cleanup.sh              # Cleanup the environment
+```
+
 ## Contracts
 
 This project is composed of two contracts.

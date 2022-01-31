@@ -1,7 +1,7 @@
 import {context, ContractPromise, ContractPromiseBatch, env, logging, PersistentSet, storage, u128} from 'near-sdk-as';
 import {
   AccountId,
-  Amount,
+  Amount, asNEAR,
   MIN_ACCOUNT_BALANCE,
   MIN_DONATION_AMOUNT,
   MIN_WITHDRAWAL_AMOUNT,
@@ -77,7 +77,7 @@ export class Contract {
         break;
       case 1:
         // promise result is complete and successful
-        logging.log(`Successfully received ${amount.toString()} NEAR donation`)
+        logging.log(`Successfully received ${asNEAR(amount)} NEAR donation`)
         storage.set(BALANCE_STORAGE_KEY, u128.add(this.get_balance(), amount))
         this.donations.add(new Donation(context.predecessor, amount, context.blockTimestamp))
         break;
@@ -135,7 +135,7 @@ export class Contract {
         break;
       case 1:
         // promise result is complete and successful
-        logging.log(`Successfully withdrawn ${amount.toString()} NEAR of donations`)
+        logging.log(`Successfully withdrawn ${asNEAR(amount)} NEAR of donations`)
         break;
       case 2:
         // promise result is complete and failed

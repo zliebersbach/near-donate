@@ -31,3 +31,22 @@ export type Amount = u128;
  * Timestamp in NEAR is a number.
  */
 export type Timestamp = u64;
+
+
+/**
+ * == FUNCTIONS ================================================================
+ */
+
+/**
+ * @function asNEAR
+ * @param amount {u128} - Yocto Ⓝ token quantity as an unsigned 128-bit integer
+ * @returns {string}    - Amount in NEAR, as a string
+ *
+ * @example
+ *
+ *    asNEAR(7000000000000000000000000)
+ *    // => '7'
+ */
+export function asNEAR(amount: u128): string {
+  return u128.div(amount, ONE_NEAR).toString();
+}

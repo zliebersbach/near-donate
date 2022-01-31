@@ -8,7 +8,7 @@
   "license": "UNLICENSED",
   "private": false,
   "scripts": {
-    "build": "asb",
+    "build:release": "asb",
     "test": "asp",
     "test:workspaces": "near-workspaces-ava",
     "test:workspaces:testnet": "near-workspaces-ava --config ./ava.testnet.config.cjs"

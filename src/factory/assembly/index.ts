@@ -9,7 +9,7 @@ import {
   storage,
   u128
 } from 'near-sdk-as';
-import {AccountId, Amount, MIN_ACCOUNT_BALANCE, MIN_WITHDRAWAL_AMOUNT, XCC_GAS} from "../../utils";
+import {AccountId, Amount, asNEAR, MIN_ACCOUNT_BALANCE, MIN_WITHDRAWAL_AMOUNT, XCC_GAS} from "../../utils";
 import {AccountAddedArgs, FeesWithdrawnArgs} from "./models";
 import {DonateInitArgs} from "../../donate/assembly/models";
 
@@ -116,6 +116,8 @@ export class Contract {
     this.assert_called_by_account()
 
     storage.set(FEES_STORAGE_KEY, u128.add(this.get_fees(), context.attachedDeposit))
+
+    logging.log("Fee deposit of " + asNEAR(context.attachedDeposit) + " NEAR from [ " + context.predecessor + " ] succeeded")
   }
 
   withdraw_fees(amount: Amount): void {
@@ -132,7 +134,7 @@ export class Contract {
 
     assert(
         u128.le(amount, fees),
-        'Attempting to withdraw more than fee balance.'
+        'Attempting to withdraw more than fee balance'
     )
 
     storage.set(FEES_STORAGE_KEY, u128.sub(fees, amount))
@@ -161,7 +163,7 @@ export class Contract {
         break;
       case 1:
         // promise result is complete and successful
-        logging.log("Fee withdrawal to [ " + owner + " ] succeeded")
+        logging.log("Fee withdrawal of " + asNEAR(amount) + " NEAR to [ " + owner + " ] succeeded")
         break;
       case 2:
         // promise result is complete and failed
