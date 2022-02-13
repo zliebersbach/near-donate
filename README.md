@@ -64,6 +64,8 @@ The donate contract is created for each charity, receiving donations, facilitati
 
 ## Future
 
+**Allow donors to stake NEAR in charities, whereby charities claim the staking rewards.** If people want to hold their NEAR but still donate, they can stake their NEAR in a charity, giving all staking rewards to that charity.
+
 **Give donors an equivalent quantity of a token that shows how much they have donated to a charity.** This could either be a platform-wide token (stored in the factory contract), or a charity-specific token (stored in the donate contract). Charities may give benefits or rewards to donors who hold certain amounts of their token.
 
 **Enable factory-owned donation contracts to boost growth.** 
